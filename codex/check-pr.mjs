@@ -45,8 +45,8 @@ if (!trailers.Magnitude) {
 } else if (trailers.Magnitude === "major") {
   if (!trailers.Post) {
     errors.push('a major ships only after a Post — add "Post: NNNN" citing the writing that argued for it');
-  } else if (!existsSync(`posts/${trailers.Post}.md`)) {
-    errors.push(`"Post: ${trailers.Post}" does not exist — posts/${trailers.Post}.md is not in the tree`);
+  } else if (!existsSync(`records/posts/${trailers.Post}.md`)) {
+    errors.push(`"Post: ${trailers.Post}" does not exist — records/posts/${trailers.Post}.md is not in the tree`);
   }
 }
 
