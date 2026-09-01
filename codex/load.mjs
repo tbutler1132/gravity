@@ -12,6 +12,7 @@ import { execFileSync } from "node:child_process";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { parse as parseYaml } from "yaml";
+import { splitTrailers } from "./trailers.mjs";
 
 const NUL = "\u0000";
 const REC = "\u0001";
@@ -69,25 +70,6 @@ const loadFiles = (glob) => {
 };
 
 // --- kind: git-merge-commits ------------------------------------------
-const TRAILER = /^[A-Za-z][A-Za-z-]*:\s.+$/;
-
-// A trailer block is the last paragraph, and only when every line in it
-// is a trailer. That keeps prose ending in "Note: ..." out of the fields.
-const splitTrailers = (body) => {
-  const paras = body.trim().split(/\n{2,}/);
-  const last = paras.at(-1);
-  if (!last || !last.split("\n").every((l) => TRAILER.test(l))) {
-    return { content: body.trim(), trailers: {} };
-  }
-  const trailers = Object.fromEntries(
-    last.split("\n").map((l) => {
-      const i = l.indexOf(":");
-      return [l.slice(0, i).trim(), l.slice(i + 1).trim()];
-    }),
-  );
-  return { content: paras.slice(0, -1).join("\n\n").trim(), trailers };
-};
-
 const loadChanges = () => {
   const fmt = ["%H", "%s", "%cI", "%b"].join("%x00");
   const raw = git("log", "--merges", `--format=${fmt}%x01`, "HEAD");
