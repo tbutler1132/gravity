@@ -69,7 +69,7 @@ $defs:
   Week:
     x-source:
       kind: files
-      glob: "weeks/*.md"
+      glob: "records/weeks/*.md"
       fields: frontmatter
       content: body
     # No body. A Week's content is a private planning and retro log;
@@ -105,7 +105,7 @@ $defs:
   Cycle:
     x-source:
       kind: files
-      glob: "cycles/*.md"
+      glob: "records/cycles/*.md"
       fields: frontmatter
       content: body
     x-display:
@@ -138,7 +138,7 @@ $defs:
   Post:
     x-source:
       kind: files
-      glob: "posts/*.md"
+      glob: "records/posts/*.md"
       fields: frontmatter
       content: body
     # index is the site root: the Posts are the front door, and the

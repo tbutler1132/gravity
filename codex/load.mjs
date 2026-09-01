@@ -10,7 +10,7 @@
 
 import { execFileSync } from "node:child_process";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { parse as parseYaml } from "yaml";
 
 const NUL = "\u0000";
@@ -46,7 +46,7 @@ const isoWeek = (date) => {
 
 // --- kind: files ------------------------------------------------------
 const loadFiles = (glob) => {
-  const dir = glob.split("/")[0];
+  const dir = dirname(glob);
   if (!existsSync(dir)) return [];
   return readdirSync(dir)
     .filter((f) => f.endsWith(".md"))
