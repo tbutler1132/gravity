@@ -30,6 +30,25 @@ $id: "gravity/codex/v0"
 # so it documents the pipeline without affecting validation.
 # ---------------------------------------------------------------
 
+# ---------------------------------------------------------------
+# Display. x-source says where a type's instances come from. x-display
+# says how they read on the way out: what the page is called, where it
+# is written, which property is prose and which are worth listing.
+# Both are annotations, and for the same reason — the grammar is the
+# one place types are declared, so a second file listing them is a
+# second place to forget one.
+# The site is rendered from these blocks, not from per-type code. A
+# type with no x-display still gets a page and a place in the
+# navigation the day it enters the grammar; ui/ holds a hand-written
+# template only where the generic one is actually wrong. That makes
+# x-display's reach a signal: if every type ends up with a bespoke
+# template, these blocks are dead weight and should be deleted.
+# Links between records are not declared here at all. A property
+# carrying a $ref to another type's id already says where it points,
+# so the renderer follows the refs and no type has to know which
+# other types exist.
+# ---------------------------------------------------------------
+
 $defs:
   # ---------------------------------------------------------------
   # Week — the grid. ISO 8601 week identifiers: 2026-W36 is the 36th
@@ -53,6 +72,14 @@ $defs:
       glob: "weeks/*.md"
       fields: frontmatter
       content: body
+    # No body. A Week's content is a private planning and retro log;
+    # what it publishes is its place in the grid and what points at it.
+    x-display:
+      plural: Weeks
+      path: "weeks/{id}.html"
+      title: "{id}"
+      body: null
+      meta: []
     type: object
     required: [id, content]
     additionalProperties: false
@@ -81,6 +108,12 @@ $defs:
       glob: "cycles/*.md"
       fields: frontmatter
       content: body
+    x-display:
+      plural: Cycles
+      path: "cycles/{id}.html"
+      title: "{name}"
+      body: content
+      meta: [start_week, length_weeks]
     type: object
     required: [id, name, content, start_week, length_weeks]
     additionalProperties: false
@@ -108,6 +141,15 @@ $defs:
       glob: "posts/*.md"
       fields: frontmatter
       content: body
+    # index is the site root: the Posts are the front door, and the
+    # list template renders them in full rather than as links.
+    x-display:
+      plural: Posts
+      path: "posts/{id}.html"
+      index: "index.html"
+      title: "{id}: {title}"
+      body: content
+      meta: [week]
     type: object
     required: [id, title, content, week]
     additionalProperties: false
@@ -148,6 +190,12 @@ $defs:
         id: trailer 'Change'
         magnitude: trailer 'Magnitude'
         post: trailer 'Post'
+    x-display:
+      plural: Changes
+      path: "changes/{id}.html"
+      title: "Change {id}"
+      body: content
+      meta: [magnitude, post]
     type: object
     required: [id, magnitude, content]
     additionalProperties: false
@@ -191,6 +239,12 @@ $defs:
       fields:
         id: tag name
         changes: derived, merges since the previous tag
+    x-display:
+      plural: Releases
+      path: "releases/{id}.html"
+      title: "Release {id}"
+      body: content
+      meta: [changes]
     type: object
     required: [id, content, changes]
     additionalProperties: false

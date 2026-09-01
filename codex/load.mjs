@@ -134,7 +134,21 @@ const loadReleases = (changes) => {
     }));
 };
 
+// A shallow clone has no merge history and no tags, so the loader would
+// return a codex with no Changes and no Releases and nothing would look
+// wrong. Refuse, rather than validate or publish a record that is
+// quietly missing most of itself.
+const assertFullHistory = () => {
+  if (git("rev-parse", "--is-shallow-repository") === "true") {
+    throw new Error(
+      "shallow clone: Changes are merge commits and Releases are tags, so " +
+        "neither is visible here. Fetch the full history (fetch-depth: 0).",
+    );
+  }
+};
+
 export const load = () => {
+  assertFullHistory();
   const schema = loadSchema();
   const glob = (type) => schema.$defs[type]["x-source"].glob;
   const changes = loadChanges();
