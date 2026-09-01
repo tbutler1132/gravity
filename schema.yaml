@@ -1,6 +1,35 @@
 $schema: "https://json-schema.org/draft/2020-12/schema"
 $id: "gravity/codex/v0"
 
+# ---------------------------------------------------------------
+# Versioning. Two numbers, two jobs, and they are not the same
+# number. A Release is named by its Week — 2026-W36 is the tag.
+# One per Week, always unique, always sortable, and it exists for
+# empty weeks too, which a version number could not honestly do.
+# What kind of week it was is derived from the Changes the Release
+# gathered, never declared, the same way Ordinary Time is derived.
+# The v0 above is the version of the grammar, not of the week. It
+# moves only when a major Change ships, because a major is the
+# only kind defined as altering what the thing is. Majors are
+# gated on a Post, so every version number traces back to a piece
+# of writing that argued for it. Minors and patches never move it.
+# ---------------------------------------------------------------
+
+# ---------------------------------------------------------------
+# Sources. Every type below carries an x-source block saying where
+# its instances actually live. Records are kept wherever they are
+# already authoritative — a Week has no home in git, so it is a
+# file; a Change is a merge commit and a Release is a tag, and
+# copying those into markdown would mean maintaining a second copy
+# of what git already holds. Storage diverges on purpose. Access
+# does not: the loaders read these sources and write one normalized
+# codex.json, and nothing downstream reads a source directly. That
+# file is generated and never hand-edited, rebuildable offline from
+# a clone with no network and no token.
+# x-source is an annotation. JSON Schema ignores unknown keywords,
+# so it documents the pipeline without affecting validation.
+# ---------------------------------------------------------------
+
 $defs:
   # ---------------------------------------------------------------
   # Week — the grid. ISO 8601 week identifiers: 2026-W36 is the 36th
@@ -19,6 +48,11 @@ $defs:
   # retros — so every Week has an instance file.
   # ---------------------------------------------------------------
   Week:
+    x-source:
+      kind: files
+      glob: "weeks/*.md"
+      fields: frontmatter
+      content: body
     type: object
     required: [id, content]
     additionalProperties: false
@@ -26,20 +60,140 @@ $defs:
       id: { type: string, pattern: "^\\d{4}-W(0[1-9]|[1-4]\\d|5[0-3])$" }
       content: { type: string }
 
-# ---------------------------------------------------------------
-# Cycle — the arc. A bounded season oriented toward one output.
-# Pinned to the grid: definite start and length in Weeks.
-# Extension is legal but is a major Change (amend length_weeks;
-# the amendment ships in a Release like everything else).
-# Between Cycles is Ordinary Time — derived, never declared:
-# any Week inside no Cycle is Ordinary Time by definition.
-# ---------------------------------------------------------------
-Cycle:
-  type: object
-  required: [id, name, content, length_weeks]
-  additionalProperties: false
-  properties:
-    id: { type: string }
-    name: { type: string }
-    content: { type: string }
-    length_weeks: { type: integer, minimum: 1 }
+  # ---------------------------------------------------------------
+  # Cycle — the arc. A bounded season oriented toward one output.
+  # Pinned to the grid: definite start and length in Weeks.
+  # start_week is the first Week inside the Cycle; length_weeks is
+  # how many Weeks it runs, counting that one. The last Week is
+  # derived, never declared, so a Cycle cannot claim an end its
+  # length does not support. Derive it with ISO week arithmetic,
+  # not by adding integers: a year has 52 or 53 Weeks, so a Cycle
+  # crossing a year boundary does not land where naive addition
+  # says it will.
+  # Extension is legal but is a major Change (amend length_weeks;
+  # the amendment ships in a Release like everything else).
+  # Between Cycles is Ordinary Time — derived, never declared:
+  # any Week inside no Cycle is Ordinary Time by definition.
+  # ---------------------------------------------------------------
+  Cycle:
+    x-source:
+      kind: files
+      glob: "cycles/*.md"
+      fields: frontmatter
+      content: body
+    type: object
+    required: [id, name, content, start_week, length_weeks]
+    additionalProperties: false
+    properties:
+      id: { type: string }
+      name: { type: string }
+      content: { type: string }
+      start_week: { $ref: "#/$defs/Week/properties/id" }
+      length_weeks: { type: integer, minimum: 1 }
+
+  # ---------------------------------------------------------------
+  # Post — the unit of stated intent. A published piece of writing.
+  # It exists so that a decision is made in the open before it
+  # becomes permanent. Going with the flow is another name for
+  # gravity; a Post is the act of deciding instead of being pulled.
+  # The id is the entry number as it appears on the index (0000,
+  # 0001, 0002, ...): monotonic, never reused, so a Change can cite
+  # the Post it depends on. week pins the Post to the grid. Every
+  # Post is published inside some Week, which is what makes "the
+  # Post came first" a checkable claim instead of a memory.
+  # ---------------------------------------------------------------
+  Post:
+    x-source:
+      kind: files
+      glob: "posts/*.md"
+      fields: frontmatter
+      content: body
+    type: object
+    required: [id, title, content, week]
+    additionalProperties: false
+    properties:
+      id: { type: string, pattern: "^\\d{4}$" }
+      title: { type: string }
+      content: { type: string }
+      week: { $ref: "#/$defs/Week/properties/id" }
+
+  # ---------------------------------------------------------------
+  # Change — a single alteration to the project, and its record.
+  # In practice a Change is a pull request; the grammar does not add
+  # a layer on top of the tools, it names what they were already
+  # doing. The id is the PR number, assigned by the tool and never
+  # reused. It rides in a trailer rather than in the merge subject
+  # because GitHub will not put the PR number in the subject and
+  # the PR description in the body at the same time, and the body
+  # is where the record lives. A trailer also makes the commit
+  # self-describing: the number is readable from a clone, without
+  # depending on how GitHub happens to format a subject line.
+  # content is the record, so nothing lands unexplained.
+  # magnitude is a small act of judgment made in the open, every
+  # time: patches fix, minors add, majors alter what the thing is.
+  # The point is not precision. The point is a shared language for
+  # how the thing moves.
+  # A major Change is gated. It may only ship after a Post stating
+  # its intent and rationale has been published, which is the
+  # if/then below: major implies a Post to point at. This is the
+  # first rule here a machine can enforce instead of a person
+  # remembering. It makes majors expensive on purpose. They should
+  # be rare, and they should cost something to make.
+  # ---------------------------------------------------------------
+  Change:
+    x-source:
+      kind: git-merge-commits
+      content: commit message body, trailers stripped
+      fields:
+        id: trailer 'Change'
+        magnitude: trailer 'Magnitude'
+        post: trailer 'Post'
+    type: object
+    required: [id, magnitude, content]
+    additionalProperties: false
+    properties:
+      id: { type: integer, minimum: 1 }
+      magnitude: { enum: [major, minor, patch] }
+      content: { type: string }
+      post: { $ref: "#/$defs/Post/properties/id" }
+    if:
+      properties: { magnitude: { const: major } }
+    then:
+      required: [post]
+
+  # ---------------------------------------------------------------
+  # Release — the end of week ritual. Weeks run Monday to Sunday,
+  # so a Release lands on the day off: a weekly act of record
+  # gathering every Change that landed that week. It is the point
+  # where the week stops being private effort and becomes something
+  # witnessed. In practice a Release is a tag, an immutable named
+  # point in history, which is what makes it a record rather than a
+  # summary that could be quietly revised later.
+  # The id is the Week it closes: the tag for the week of 2026-W36
+  # is 2026-W36. A Release carries no version of its own. Naming it
+  # after the Week is also what holds it to one per Week — a second
+  # Release would be a duplicate tag, which the tooling refuses
+  # before the grammar has to.
+  # changes may be empty, and the Release is required anyway. A
+  # week with nothing in it still gets one: an empty Release is
+  # drift, dated and visible. content is required for the same
+  # reason — the ritual is to write something every Sunday, most of
+  # all when there is nothing to gather.
+  # ---------------------------------------------------------------
+  Release:
+    x-source:
+      kind: git-tags
+      content: tag message
+      fields:
+        id: tag name
+        changes: derived, merges since the previous tag
+    type: object
+    required: [id, content, changes]
+    additionalProperties: false
+    properties:
+      id: { $ref: "#/$defs/Week/properties/id" }
+      content: { type: string }
+      changes:
+        type: array
+        uniqueItems: true
+        items: { $ref: "#/$defs/Change/properties/id" }
