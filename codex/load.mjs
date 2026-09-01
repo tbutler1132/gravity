@@ -31,9 +31,10 @@ const isAncestor = (a, b) => {
 export const loadSchema = () => parseYaml(readFileSync("schema.yaml", "utf8"));
 
 // Changes merged at or before this commit predate the grammar and are
-// not held to it. #1 and #2 landed before the trailers existed, and
-// history is not rewritten to hide that. Everything after complies.
-export const GRAMMAR_EPOCH = "75f79a0";
+// not held to it. Only #1 does: it landed before any of these types
+// existed, and rewriting it would mean rewriting everything after it.
+// #2 introduced the grammar and is held to it like everything since.
+export const GRAMMAR_EPOCH = "6cf441a";
 
 const isoWeek = (date) => {
   const d = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
