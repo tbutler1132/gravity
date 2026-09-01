@@ -1,0 +1,42 @@
+name: codex
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+  push:
+    branches: [master]
+
+jobs:
+  # The record, checked while it can still be fixed. The pull request
+  # description becomes the merge commit body, so this is the gate: a
+  # failing check here means no bad record is ever written.
+  record:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node codex/check-pr.mjs
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+
+  # The grammar itself. Needs full history: Changes are merge commits
+  # and Releases are tags, so a shallow clone would see neither. On a
+  # pull request this checks out the branch tip rather than GitHub's
+  # merge preview, whose synthetic merge commit is not a Change.
+  grammar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run validate

@@ -1,0 +1,22 @@
+{
+  "name": "gravity-codex",
+  "version": "0.0.0",
+  "scripts": {
+    "validate": "node codex/validate.mjs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tbutler1132/gravity.git"
+  },
+  "license": "ISC",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/tbutler1132/gravity/issues"
+  },
+  "homepage": "https://github.com/tbutler1132/gravity#readme",
+  "private": true,
+  "devDependencies": {
+    "ajv": "^8.20.0",
+    "yaml": "^2.9.0"
+  }
+}
