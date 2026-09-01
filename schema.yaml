@@ -58,7 +58,7 @@ $defs:
     additionalProperties: false
     properties:
       id: { type: string, pattern: "^\\d{4}-W(0[1-9]|[1-4]\\d|5[0-3])$" }
-      content: { type: string }
+      content: { type: string, minLength: 1 }
 
   # ---------------------------------------------------------------
   # Cycle — the arc. A bounded season oriented toward one output.
@@ -86,8 +86,8 @@ $defs:
     additionalProperties: false
     properties:
       id: { type: string }
-      name: { type: string }
-      content: { type: string }
+      name: { type: string, minLength: 1 }
+      content: { type: string, minLength: 1 }
       start_week: { $ref: "#/$defs/Week/properties/id" }
       length_weeks: { type: integer, minimum: 1 }
 
@@ -113,8 +113,8 @@ $defs:
     additionalProperties: false
     properties:
       id: { type: string, pattern: "^\\d{4}$" }
-      title: { type: string }
-      content: { type: string }
+      title: { type: string, minLength: 1 }
+      content: { type: string, minLength: 1 }
       week: { $ref: "#/$defs/Week/properties/id" }
 
   # ---------------------------------------------------------------
@@ -154,10 +154,14 @@ $defs:
     properties:
       id: { type: integer, minimum: 1 }
       magnitude: { enum: [major, minor, patch] }
-      content: { type: string }
+      content: { type: string, minLength: 1 }
       post: { $ref: "#/$defs/Post/properties/id" }
+    # required: [magnitude] is load-bearing. Without it, a Change that
+    # omits magnitude entirely satisfies the if vacuously and is asked
+    # for a Post, which reads as though it were a major.
     if:
       properties: { magnitude: { const: major } }
+      required: [magnitude]
     then:
       required: [post]
 
@@ -192,7 +196,7 @@ $defs:
     additionalProperties: false
     properties:
       id: { $ref: "#/$defs/Week/properties/id" }
-      content: { type: string }
+      content: { type: string, minLength: 1 }
       changes:
         type: array
         uniqueItems: true
