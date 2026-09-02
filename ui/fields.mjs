@@ -6,6 +6,7 @@
 // not mean re-implementing its links.
 
 import { html, raw, sections } from "./html.mjs";
+import { prose, wrapped } from "./prose.mjs";
 import { refType, backlinks, display } from "./display.mjs";
 
 const join = (nodes, sep) => nodes.flatMap((n, i) => (i ? [raw(sep), n] : [n]));
@@ -18,6 +19,33 @@ const value = (ctx, type, prop, record) => {
   if (ref) return ctx.linkTo(ref.type, v);
   if (Array.isArray(v)) return v.length ? html`${v.join(", ")}` : html`<em>none</em>`;
   return html`${v}`;
+};
+
+// What a type is, as the grammar states it: the type's description, and
+// the descriptions of the properties that carry one. Read straight off
+// the schema — description is JSON Schema's own keyword, not one of the
+// x- annotations, and it is the only place a type says what it means.
+//
+// A type with no description renders nothing here, so this costs a type
+// nothing until someone writes one.
+export const about = (ctx, type) => {
+  const def = ctx.schema.$defs[type];
+  const props = Object.entries(def.properties ?? {}).filter(([, p]) => p.description);
+  return sections(
+    def.description ? prose(def.description) : null,
+    props.length
+      ? sections(
+          html`      <dl>`,
+          ...props.flatMap(([name, p]) => [
+            html`        <dt>${name.replace(/_/g, " ")}</dt>`,
+            html`        <dd>
+${wrapped(p.description, 10)}
+        </dd>`,
+          ]),
+          html`      </dl>`,
+        )
+      : null,
+  );
 };
 
 export const meta = (ctx, type, record) => {

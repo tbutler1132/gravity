@@ -33,6 +33,12 @@ const block = (b, pad) => {
   return `${pad}<p>\n${wrap(esc(b.split("\n").join(" ")), 72, pad + "  ")}\n${pad}</p>`;
 };
 
+// One line of prose that already sits inside an element — a field
+// description in a <dd> — wrapped and indented like the rest, so the
+// generated file stays readable at a fixed width.
+export const wrapped = (text, indent) =>
+  raw(wrap(esc(text.split("\n").join(" ")), 72, " ".repeat(indent)));
+
 // depth is how many levels deep the prose sits in the document, so the
 // generated file stays indented like something a person wrote.
 export const prose = (content, depth = 3) => {

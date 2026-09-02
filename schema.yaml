@@ -43,6 +43,11 @@ $id: "gravity/codex/v0"
 # template only where the generic one is actually wrong. That makes
 # x-display's reach a signal: if every type ends up with a bespoke
 # template, these blocks are dead weight and should be deleted.
+# description is the standard keyword, and it does the same work from
+# the other side: x-display says how a record reads, description says
+# what its type is. The renderer puts it on the type's index page, so a
+# definition lives on the site instead of only in this file, where only
+# someone reading the grammar could find it.
 # Links between records are not declared here at all. A property
 # carrying a $ref to another type's id already says where it points,
 # so the renderer follows the refs and no type has to know which
@@ -50,23 +55,18 @@ $id: "gravity/codex/v0"
 # ---------------------------------------------------------------
 
 $defs:
-  # ---------------------------------------------------------------
-  # Week — the grid. ISO 8601 week identifiers: 2026-W36 is the 36th
-  # week of 2026, running Mon 2026-08-31 through Sun 2026-09-06.
-  # Weeks run Monday to Sunday, so a Week closes on the day off.
-  # (ISO W01 is the week containing Jan 4, so the first Week of a
-  # year can begin in the previous calendar year, and a year has 52
-  # or 53 of them.)
-  # Uniform, repeating, the same size every time; that sameness is
-  # the point. A Week exists to carry rhythm: rituals, check-ins,
-  # and habits that only work because the interval never changes.
-  # Everyone's time has the same shape, and that is where belonging
-  # comes from. It exists in the grammar as the unit other types are
-  # measured in. The id fixes a Week's place in the grid; content is
-  # the record of what actually happened in it — planning, check-ins,
-  # retros — so every Week has an instance file.
-  # ---------------------------------------------------------------
   Week:
+    description: |
+      The grid. ISO 8601 week identifiers: 2026-W36 is the 36th week of
+      2026, running Mon 2026-08-31 through Sun 2026-09-06. Weeks run
+      Monday to Sunday, so a Week closes on the day off.
+
+      Uniform, repeating, the same size every time; that sameness is the
+      point. A Week exists to carry rhythm: rituals, check-ins, and
+      habits that only work because the interval never changes.
+      Everyone's time has the same shape, and that is where belonging
+      comes from. It exists in the grammar as the unit the other types
+      are measured in.
     x-source:
       kind: files
       glob: "records/weeks/*.md"
@@ -84,25 +84,24 @@ $defs:
     required: [id, content]
     additionalProperties: false
     properties:
-      id: { type: string, pattern: "^\\d{4}-W(0[1-9]|[1-4]\\d|5[0-3])$" }
-      content: { type: string, minLength: 1 }
+      id:
+        description: >-
+          A Week's place in the grid. ISO W01 is the week containing
+          Jan 4, so the first Week of a year can begin in the previous
+          calendar year, and a year has 52 or 53 of them.
+        type: string
+        pattern: "^\\d{4}-W(0[1-9]|[1-4]\\d|5[0-3])$"
+      content:
+        description: >-
+          The record of what actually happened in the Week: planning,
+          check-ins, retros. Every Week has one.
+        type: string
+        minLength: 1
 
-  # ---------------------------------------------------------------
-  # Cycle — the arc. A bounded season oriented toward one output.
-  # Pinned to the grid: definite start and length in Weeks.
-  # start_week is the first Week inside the Cycle; length_weeks is
-  # how many Weeks it runs, counting that one. The last Week is
-  # derived, never declared, so a Cycle cannot claim an end its
-  # length does not support. Derive it with ISO week arithmetic,
-  # not by adding integers: a year has 52 or 53 Weeks, so a Cycle
-  # crossing a year boundary does not land where naive addition
-  # says it will.
-  # Extension is legal but is a major Change (amend length_weeks;
-  # the amendment ships in a Release like everything else).
-  # Between Cycles is Ordinary Time — derived, never declared:
-  # any Week inside no Cycle is Ordinary Time by definition.
-  # ---------------------------------------------------------------
   Cycle:
+    description: |
+      The arc. A bounded season oriented toward one output, pinned to
+      the grid: a definite start, and a definite length in Weeks.
     x-source:
       kind: files
       glob: "records/cycles/*.md"
@@ -119,10 +118,29 @@ $defs:
     additionalProperties: false
     properties:
       id: { type: string }
-      name: { type: string, minLength: 1 }
-      content: { type: string, minLength: 1 }
-      start_week: { $ref: "#/$defs/Week/properties/id" }
-      length_weeks: { type: integer, minimum: 1 }
+      name:
+        description: What the Cycle is called.
+        type: string
+        minLength: 1
+      content:
+        description: What the Cycle is for — the one output it is oriented toward.
+        type: string
+        minLength: 1
+      start_week:
+        description: The first Week inside the Cycle.
+        $ref: "#/$defs/Week/properties/id"
+      # Derive the last Week with ISO week arithmetic, not by adding
+      # integers: a year has 52 or 53 Weeks, so a Cycle crossing a year
+      # boundary does not land where naive addition says it will.
+      length_weeks:
+        description: >-
+          How many Weeks the Cycle runs, counting start_week. The last
+          Week is derived, never declared, so a Cycle cannot claim an
+          end its length does not support. Extending a Cycle is legal
+          and is a major Change: amend this number, and the amendment
+          ships in a Release like everything else.
+        type: integer
+        minimum: 1
 
   # ---------------------------------------------------------------
   # Post — the unit of stated intent. A published piece of writing.
